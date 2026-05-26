@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeoConnect AI</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="style.css">
+    <script src="/env.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+    <!-- Authentication Container -->
+    <div class="auth-container" id="authContainer" style="display: none;">
+        <div class="auth-card">
+            <div class="auth-header">
+                <i class="fa-solid fa-brain auth-logo-icon"></i>
+                <h2>NeoConnect AI</h2>
+                <p id="authSubtitle">Smart Contact Directory Access</p>
+            </div>
+            
+            <!-- Login Form -->
+            <form id="loginForm" class="auth-form">
+                <div class="input-form-control-group">
+                    <input type="email" id="loginEmail" placeholder="Email Address" required>
+                </div>
+                <div class="input-form-control-group">
+                    <input type="password" id="loginPassword" placeholder="Password" required>
+                </div>
+                <button type="submit" class="btn-submit-form-action">Log In</button>
+                <div class="auth-links">
+                    <span onclick="toggleAuthView('signup')">Create Account</span>
+                    <span onclick="toggleAuthView('forgot')">Forgot Password?</span>
+                </div>
+            </form>
+
+            <!-- Sign Up Form -->
+            <form id="signupForm" class="auth-form" style="display: none;">
+                <div class="input-form-control-group">
+                    <input type="text" id="signupName" placeholder="Full Name" required>
+                </div>
+                <div class="input-form-control-group">
+                    <input type="email" id="signupEmail" placeholder="Email Address" required>
+                </div>
+                <div class="input-form-control-group">
+                    <input type="password" id="signupPassword" placeholder="Password" required minlength="6">
+                </div>
+                <button type="submit" class="btn-submit-form-action">Sign Up</button>
+                <div class="auth-links">
+                    <span onclick="toggleAuthView('login')">Already have an account? Log In</span>
+                </div>
+            </form>
+
+            <!-- Forgot Password Form -->
+            <form id="forgotForm" class="auth-form" style="display: none;">
+                <p class="auth-info-text">Enter your email to receive a password reset link.</p>
+                <div class="input-form-control-group">
+                    <input type="email" id="forgotEmail" placeholder="Email Address" required>
+                </div>
+                <button type="submit" class="btn-submit-form-action">Send Reset Link</button>
+                <div class="auth-links">
+                    <span onclick="toggleAuthView('login')">Back to Log In</span>
+                </div>
+            </form>
+
+            <!-- Reset Password Form -->
+            <form id="resetForm" class="auth-form" style="display: none;">
+                <p class="auth-info-text">Enter your new password below.</p>
+                <div class="input-form-control-group">
+                    <input type="password" id="resetPassword" placeholder="New Password" required minlength="6">
+                </div>
+                <button type="submit" class="btn-submit-form-action">Update Password</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="app-container" id="appContainer" style="display: none;">
+        <div class="sidebar">
+            <div class="brand-logo">
+                <i class="fa-solid fa-brain"></i>
+                <h2>NeoConnect AI</h2>
+            </div>
+            
+            <ul class="nav-menu">
+                <li id="side-dashboard" class="menu-item active" onclick="switchView('Dashboard')">
+                    <i class="fa-solid fa-house"></i> Dashboard
+                </li>
+                
+                <li class="menu-item-group">
+                    <div class="menu-item" onclick="switchView('All-Contacts')">
+                        <i class="fa-solid fa-user-group"></i> Contacts
+                    </div>
+                    <div class="sidebar-dropdown-box">
+                        <select id="sidebarSortDropdown" onchange="triggerSortEngine(this.value)">
+                            <option value="default">Name: Default</option>
+                            <option value="az">Name: A to Z</option>
+                            <option value="za">Name: Z to A</option>
+                        </select>
+                    </div>
+                </li>
+
+                <li id="side-favorites" class="menu-item" onclick="switchView('Favorites')">
+                    <i class="fa-solid fa-star"></i> Favorites
+                </li>
+
+                <li class="menu-item-group">
+                    <div class="menu-item" id="groupsAccordionTrigger" onclick="toggleGroupsAccordionMenu()">
+                        <i class="fa-solid fa-layer-group"></i> Groups 
+                        <i class="fa-solid fa-chevron-down accordion-arrow-indicator" id="accordionArrow"></i>
+                    </div>
+                    <ul class="sub-group-list hidden-accordion-list" id="sidebarGroupsNestedList">
+                        <li onclick="switchViewGroup('Work')"><i class="fa-solid fa-briefcase" style="color: #60a5fa;"></i> Work</li>
+                        <li onclick="switchViewGroup('Family')"><i class="fa-solid fa-heart" style="color: #f472b6;"></i> Family</li>
+                        <li onclick="switchViewGroup('Friends')"><i class="fa-solid fa-user-tag" style="color: #34d399;"></i> Friends</li>
+                        <li onclick="switchViewGroup('Emergency')"><i class="fa-solid fa-triangle-exclamation" style="color: #ef4444;"></i> Emergency</li>
+                    </ul>
+                </li>
+
+                <li id="side-trash" class="menu-item" onclick="switchView('Trash')">
+                    <i class="fa-solid fa-trash-can"></i> Trash
+                </li>
+
+                <li id="side-settings" class="menu-item" onclick="switchView('Settings')">
+                    <i class="fa-solid fa-gear"></i> Settings
+                </li>
+            </ul>
+            
+            <button class="btn-add-contact-sidebar" onclick="launchContactModal()">
+                <i class="fa-solid fa-plus"></i> Add New Contact
+            </button>
+        </div>
+
+        <div class="main-content">
+            <div class="top-navbar-strip">
+                <div class="welcome-heading-block">
+                    <h1 id="welcomeHeadingText">Welcome Back, Srush 👋</h1>
+                </div>
+                
+                <div class="navbar-aligned-interactive-row">
+                    <div class="search-wrapper-panel" id="mainSearchBarContainer">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" id="mainSearchInput" placeholder="Search saved directory profiles...">
+                    </div>
+                    
+                    <button class="btn-theme-toggle-action" id="themeModeToggleBtn">
+                        <i class="fa-solid fa-moon"></i>
+                    </button>
+                    
+                    <div class="user-profile-node" id="navbarAvatarDropdownTrigger">
+                        <img id="activeNavbarAvatar" src="https://images.unsplash.com/photo-1566492031773-4f4e44671857?auto=format&fit=crop&w=150&q=80" alt="Master Profile Illustration">
+                        
+                        <div class="avatar-selection-dropdown" id="avatarSelectorDropdown">
+                            <p class="dropdown-panel-title-label">Change Profile Identity Art</p>
+                            <div class="avatar-grid-wrapper">
+    <img src="https://api.dicebear.com/7.x/bottts/svg?seed=Felix" title="Cyber Robot Art" onclick="updateMasterUserAvatar(this.src)">
+    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Midnight" title="Anime Boy Illustration" onclick="updateMasterUserAvatar(this.src)">
+    <img src="https://api.dicebear.com/7.x/pixel-art/svg?seed=Gamer" title="Retro Pixel Character" onclick="updateMasterUserAvatar(this.src)">
+    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Luna" title="Anime Girl Illustration" onclick="updateMasterUserAvatar(this.src)">
+    <img src="https://api.dicebear.com/7.x/micah/svg?seed=Shadow" title="Minimal Vector Art" onclick="updateMasterUserAvatar(this.src)">
+    <img src="https://api.dicebear.com/7.x/bottts/svg?seed=Neon" title="Neon Mech Avatar" onclick="updateMasterUserAvatar(this.src)">
+</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="dynamicContentStageViewport">
+                <div class="metrics-dashboard-grid" id="metricsCountersGridRow">
+                    <div class="metric-card metrics-blue" onclick="switchView('All-Contacts')">
+                        <div class="metric-icon-box"><i class="fa-solid fa-address-book"></i></div>
+                        <div class="metric-data-box"><h2 id="counterTotalContacts">0</h2><p>Total Contacts</p></div>
+                    </div>
+                    <div class="metric-card metrics-purple" onclick="switchView('Favorites')">
+                        <div class="metric-icon-box"><i class="fa-solid fa-star"></i></div>
+                        <div class="metric-data-box"><h2 id="counterFavContacts">0</h2><p>Favorites</p></div>
+                    </div>
+                    <div class="metric-card metrics-orange" onclick="switchViewGroup('Emergency')">
+                        <div class="metric-icon-box"><i class="fa-solid fa-phone-flip"></i></div>
+                        <div class="metric-data-box"><h2 id="counterEmergencyContacts">0</h2><p>Emergency Numbers</p></div>
+                    </div>
+                </div>
+
+                <div class="view-header-row"><h2 id="viewStateTitleLabel">Recent Contacts</h2></div>
+                <div class="contacts-cards-responsive-grid" id="contactsMasterRenderingGrid"></div>
+
+                <div class="ai-insights-section-block">
+                    <div class="ai-insights-card">
+                        <div class="ai-insights-title-header"><h3>Smart Suggestions Engine</h3><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                        <div class="ai-suggestions-vertical-stack" id="aiSmartSuggestionsWrapperBox"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay-layer hidden-dialog-window" id="contactProcessingModalDialog">
+        <div class="modal-surface-container">
+            <div class="modal-top-heading-bar">
+                <h3 id="contactModalActionTitleHeader">Add New Contact</h3>
+                <button type="button" class="btn-close-modal-sheet" onclick="dismissContactModal()"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="systemContactEntitySubmissionForm" class="modal-form-pipeline">
+                <div class="input-form-control-group"><input type="text" id="inputFormContactName" placeholder="Full Name" required></div>
+                <div class="input-form-control-group"><input type="tel" id="inputFormContactPhone" placeholder="Phone Number (e.g., +91 / Emergency Index)" required></div>
+                <div class="input-form-control-group"><input type="email" id="inputFormContactEmail" placeholder="Email Address"></div>
+                <div class="input-form-control-group">
+                    <select id="inputFormContactCategory">
+                        <option value="Work">Work</option><option value="Family">Family</option><option value="Friends">Friends</option><option value="Emergency">Emergency</option>
+                    </select>
+                </div>
+                <div class="input-form-control-group"><textarea id="inputFormContactNotes" placeholder="AI Structural Custom Tags (e.g., Direct Report, High Priority Contact link)"></textarea></div>
+                
+                <p class="modal-avatar-selector-label">Assign Contact Badge Art Face:</p>
+<div class="modal-avatar-selection-flexbox-row">
+    <img class="modal-selectable-avatar-item selected-active-avatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=Felix" onclick="markSelectedFormAvatar(this)">
+    <img class="modal-selectable-avatar-item" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Midnight" onclick="markSelectedFormAvatar(this)">
+    <img class="modal-selectable-avatar-item" src="https://api.dicebear.com/7.x/pixel-art/svg?seed=Gamer" onclick="markSelectedFormAvatar(this)">
+    <img class="modal-selectable-avatar-item" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Luna" onclick="markSelectedFormAvatar(this)">
+</div>
+                
+                <button type="submit" class="btn-submit-form-action">Save Contact Node</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="system-toast-alert-box functional-toast-hidden" id="appSystemNotificationToastBox">
+        <i class="fa-solid fa-circle-check"></i><span id="appSystemNotificationToastMessageLabel">System Node initialized.</span>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
